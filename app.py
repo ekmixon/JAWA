@@ -183,47 +183,48 @@ def cleanup():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        if os.path.isfile(server_json_file):
-            with open(server_json_file) as json_file:
-                server_json = json.load(json_file)
-            if request.form.get('active_url'):
-                session['url'] = str(request.form.get('active_url'))
-            elif server_json.get('jps_url', 0):
-                if server_json['jps_url'] is not None and len(server_json['jps_url']) != 0:
-                    session['url'] = str(server_json['jps_url'])
-            else:
-                session['url'] = request.form['url']
+    if request.method != 'POST':
+        return (
+            redirect(url_for('logout'))
+            if 'username' not in session
+            else redirect(url_for('dashboard'))
+        )
+
+    if os.path.isfile(server_json_file):
+        with open(server_json_file) as json_file:
+            server_json = json.load(json_file)
+        if request.form.get('active_url'):
+            session['url'] = str(request.form.get('active_url'))
+        elif server_json.get('jps_url', 0):
+            if server_json['jps_url'] is not None and len(server_json['jps_url']) != 0:
+                session['url'] = str(server_json['jps_url'])
         else:
             session['url'] = request.form['url']
-        session['username'] = request.form['username']
-        session['password'] = request.form['password']
+    else:
+        session['url'] = request.form['url']
+    session['username'] = request.form['username']
+    session['password'] = request.form['password']
 
-        jawa_logger().info(f"[{session.get('url')}] Attempting login for: {session.get('username')}")
+    jawa_logger().info(f"[{session.get('url')}] Attempting login for: {session.get('username')}")
 
-        if request.form['password'] == "":
-            return redirect(url_for('logout'))
-        try:
-            resp = requests.get(
-                session['url'] + '/JSSResource/activationcode',
-                auth=(session['username'], session['password']),
-                headers={'Accept': 'application/json'},
-                verify=verify_ssl)
-
-            resp.raise_for_status()
-
-        except requests.exceptions.HTTPError as err:
-            return redirect(url_for('logout'))
-
-        response_json = resp.json()
-
-        jawa_logger().info(
-            f"[{session.get('url')}] Logging In: " + str(escape(session['username'])))
-
-        return redirect(url_for('dashboard'))
-
-    if 'username' not in session:
+    if request.form['password'] == "":
         return redirect(url_for('logout'))
+    try:
+        resp = requests.get(
+            session['url'] + '/JSSResource/activationcode',
+            auth=(session['username'], session['password']),
+            headers={'Accept': 'application/json'},
+            verify=verify_ssl)
+
+        resp.raise_for_status()
+
+    except requests.exceptions.HTTPError as err:
+        return redirect(url_for('logout'))
+
+    response_json = resp.json()
+
+    jawa_logger().info(
+        f"[{session.get('url')}] Logging In: " + str(escape(session['username'])))
 
     return redirect(url_for('dashboard'))
 
@@ -247,26 +248,25 @@ def load_home():
         return render_template('home.html')
     brand = server_json.get("brand")
 
-    if 'jps_url' not in server_json:
+    if (
+        'jps_url' not in server_json
+        or server_json['jps_url'] is None
+        or len(server_json['jps_url']) == 0
+    ):
         return render_template('home.html', app_name=brand)
-    elif server_json['jps_url'] is None:
+    if 'alternate_jps' not in server_json:
         return render_template('home.html', app_name=brand)
-    elif len(server_json['jps_url']) == 0:
-        return render_template('home.html', app_name=brand)
-    else:
-        if 'alternate_jps' not in server_json:
-            return render_template('home.html', app_name=brand)
 
-        if server_json['alternate_jps'] != "":
-            return render_template('home.html',
-                                   jps_url=server_json['jps_url'],
-                                   jps_url2=server_json['alternate_jps'],
-                                   welcome="true", jsslock="true", app_name=brand)
-
-        session['url'] = server_json['jps_url']
+    if server_json['alternate_jps'] != "":
         return render_template('home.html',
-                               jps_url=str(escape(session['url'])),
+                               jps_url=server_json['jps_url'],
+                               jps_url2=server_json['alternate_jps'],
                                welcome="true", jsslock="true", app_name=brand)
+
+    session['url'] = server_json['jps_url']
+    return render_template('home.html',
+                           jps_url=str(escape(session['url'])),
+                           welcome="true", jsslock="true", app_name=brand)
 
 
 @app.route("/")
@@ -275,18 +275,16 @@ def home():
         return redirect(url_for('dashboard'))
     with open(server_json_file) as json_file:
         server_json = json.load(json_file)
-    # print(server_json)
-    if 'jps_url' not in server_json:
+    if (
+        'jps_url' not in server_json
+        or server_json['jps_url'] is None
+        or len(server_json['jps_url']) == 0
+    ):
         return render_template('home.html')
-    elif server_json['jps_url'] is None:
-        return render_template('home.html')
-    elif len(server_json['jps_url']) == 0:
-        return render_template('home.html')
-    else:
-        session['url'] = server_json['jps_url']
-        return render_template('home.html',
-                               jps_url=str(escape(session['url'])),
-                               welcome="true", jsslock="true")
+    session['url'] = server_json['jps_url']
+    return render_template('home.html',
+                           jps_url=str(escape(session['url'])),
+                           welcome="true", jsslock="true")
 
 
 @app.route("/dashboard")
@@ -349,7 +347,7 @@ def dashboard():
 @app.route('/success', methods=['GET', 'POST'])
 def success():
     if 'username' not in session:
-        jawa_logger().info(f"No user logged in - returning to login page.")
+        jawa_logger().info("No user logged in - returning to login page.")
         return redirect(url_for('logout'))
     return render_template(
         'success.html',

@@ -81,7 +81,7 @@ def okta_new():
     okta_name = request.form.get('webhookname')
     okta_event = request.form.get('event')
     description = request.form.get('description')
-    webhook_server_url = server_address + '/hooks/' + okta_name
+    webhook_server_url = f'{server_address}/hooks/{okta_name}'
     print(webhook_server_url)
     owd = os.getcwd()
     os.chdir(scripts_dir)
@@ -98,7 +98,7 @@ def okta_new():
     data = json.load(open(webhooks_file))
 
     new_id = okta_name
-    script_file = os.path.join(scripts_dir, okta_name + "_" + f.filename)
+    script_file = os.path.join(scripts_dir, f"{okta_name}_{f.filename}")
 
     os.rename(old_script_file, script_file)
     new_file = script_file
@@ -142,12 +142,16 @@ def okta_new():
     data = json.dumps(data, indent=4)
 
     # Makes hook in Okta, gets id
-    response = requests.post(okta_server + '/api/v1/eventHooks',
-                             headers={
-                                 'Accept': 'application/json',
-                                 "Authorization": "SSWS {}".format(okta_token),
-                                 'Content-Type': 'application/json'},
-                             data=data)
+    response = requests.post(
+        f'{okta_server}/api/v1/eventHooks',
+        headers={
+            'Accept': 'application/json',
+            "Authorization": f"SSWS {okta_token}",
+            'Content-Type': 'application/json',
+        },
+        data=data,
+    )
+
     print(response.status_code, response.text)
     response_json = response.json()
     print(response_json)
@@ -168,8 +172,11 @@ def okta_new():
             json.dump(okta_info, outfile, indent=4)
 
     # Verify/activate
-    response = requests.post(okta_server + '/api/v1/eventHooks/{}/lifecycle/verify'.format(okta_id),
-                             headers={"Authorization": "SSWS {}".format(okta_token)})
+    response = requests.post(
+        okta_server + f'/api/v1/eventHooks/{okta_id}/lifecycle/verify',
+        headers={"Authorization": f"SSWS {okta_token}"},
+    )
+
 
     verification = response.json()
     if 'errorCode' in verification:

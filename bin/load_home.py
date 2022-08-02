@@ -16,23 +16,22 @@ def load_home():
         return render_template('home.html')
     brand = server_json.get("brand")
 
-    if 'jps_url' not in server_json:
+    if (
+        'jps_url' not in server_json
+        or server_json['jps_url'] is None
+        or len(server_json['jps_url']) == 0
+    ):
         return render_template('home.html', app_name=brand)
-    elif server_json['jps_url'] is None:
+    if 'alternate_jps' not in server_json:
         return render_template('home.html', app_name=brand)
-    elif len(server_json['jps_url']) == 0:
-        return render_template('home.html', app_name=brand)
-    else:
-        if 'alternate_jps' not in server_json:
-            return render_template('home.html', app_name=brand)
 
-        if server_json['alternate_jps'] != "":
-            return render_template('home.html',
-                                   jps_url=server_json['jps_url'],
-                                   jps_url2=server_json['alternate_jps'],
-                                   welcome="true", jsslock="true", app_name=brand)
-
-        session['url'] = server_json['jps_url']
+    if server_json['alternate_jps'] != "":
         return render_template('home.html',
-                               jps_url=str(escape(session['url'])),
+                               jps_url=server_json['jps_url'],
+                               jps_url2=server_json['alternate_jps'],
                                welcome="true", jsslock="true", app_name=brand)
+
+    session['url'] = server_json['jps_url']
+    return render_template('home.html',
+                           jps_url=str(escape(session['url'])),
+                           welcome="true", jsslock="true", app_name=brand)

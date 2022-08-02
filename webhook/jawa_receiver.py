@@ -57,10 +57,9 @@ def webhook_handler(webhook_name):
     if request.method != 'POST':
         jawa_logger().info(f"Invalid request, {request.method} for /hooks/{webhook_name}.")
         return "405 - Method not allowed. These aren't the droids you're looking for. You can go about your business. Move along.", 405
-    auth = request.authorization
     webhook_user = "null"
     webhook_pass = "null"
-    if auth:  # .get("username"):
+    if auth := request.authorization:
         webhook_user = auth.get("username")
         webhook_pass = auth.get("password")
 

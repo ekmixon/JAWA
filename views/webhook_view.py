@@ -55,10 +55,18 @@ def delete_webhook():
                     try:
                         response = requests.post(
                             f"{each_webhook.get('okta_url')}/api/v1/eventHooks/{each_webhook.get('okta_id')}/lifecycle/deactivate",
-                            headers={"Authorization": "SSWS {}".format(each_webhook.get('okta_token'))})
+                            headers={
+                                "Authorization": f"SSWS {each_webhook.get('okta_token')}"
+                            },
+                        )
+
                         response2 = requests.delete(
                             f"{each_webhook.get('okta_url')}/api/v1/eventHooks/{each_webhook.get('okta_id')}",
-                            headers={"Authorization": "SSWS {}".format(each_webhook.get('okta_token'))})
+                            headers={
+                                "Authorization": f"SSWS {each_webhook.get('okta_token')}"
+                            },
+                        )
+
                     except requests.exceptions.MissingSchema as err:
                         return redirect(url_for('error', error=err, username=session.get('username')))
 

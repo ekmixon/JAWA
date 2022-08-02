@@ -147,7 +147,7 @@ def jp_new():
         if (
                 request.form.get('username') != '' or
                 request.form.get('password') != ''):
-            auth_xml = f"<authentication_type>BASIC</authentication_type>"
+            auth_xml = "<authentication_type>BASIC</authentication_type>"
             if request.form.get('username') == '':
                 auth_xml += "<username>null</username>"
             else:
@@ -181,9 +181,9 @@ def jp_new():
                                    username=str(escape(session['username'])))
 
         result = re.search('<id>(.*)</id>', webhook_response.text)
-        print(result.group(1))
-        jamf_id = result.group(1)
-        new_link = "{}/webhooks.html?id={}&o=r".format(session['url'], result.group(1))
+        print(result[1])
+        jamf_id = result[1]
+        new_link = f"{session['url']}/webhooks.html?id={result[1]}&o=r"
 
         data = json.load(open(webhooks_file))
         webhook_username = request.form.get('username')

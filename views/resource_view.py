@@ -67,16 +67,14 @@ def rebrand():
     brand = server_json.get('brand')
     if request.method == "POST":
         upload_files_list = request.files.getlist('upload')
-        new_name = request.form.get('new_name')
-        if new_name:
+        if new_name := request.form.get('new_name'):
             server_json['brand'] = new_name
             brand = new_name
 
             with open(server_file, 'w') as fout:
                 json.dump(server_json, fout, indent=4)
         if upload_files_list:
-            target_file = upload_files_list[0]
-            if target_file:
+            if target_file := upload_files_list[0]:
                 os.rename(f"{img_dir}/jawa_icon.png", f"{img_dir}/old_jawa_icon_{datetime.now()}.png")
                 target_file.save(os.path.join(img_dir, "jawa_icon.png"))
                 return redirect(url_for('resources_view.rebrand'))

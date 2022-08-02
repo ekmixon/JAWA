@@ -44,7 +44,7 @@ def log_view():
 @blueprint.route('/log/live.html', methods=['GET'])
 @response(template_file="log/live.html")
 def stream():
-    if not 'username' in session:
+    if 'username' not in session:
         return flask.redirect(flask.url_for('logout'))
     jawa_logger().debug(f"[{session.get('url')}] {session.get('username').title()} viewed {request.path}")
 
